@@ -65,4 +65,89 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// ✅ Get upcoming meetings (today & future)
+router.get("/upcoming", async (req, res) => {
+  try {
+    const today = new Date().toISOString().split("T")[0]; // Get today's date (YYYY-MM-DD)
+    const meetings = await MeetingDetail.findAll({
+      where: { meetingDate: { [Op.gte]: today } },
+      attributes: { exclude: ["createdAt", "updatedAt"] }
+    });
+    res.json(meetings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ✅ Get past meetings
+router.get("/past", async (req, res) => {
+  try {
+    const today = new Date().toISOString().split("T")[0]; // Get today's date
+    const meetings = await MeetingDetail.findAll({
+      where: { meetingDate: { [Op.lt]: today } },
+      attributes: { exclude: ["createdAt", "updatedAt"] }
+    });
+    res.json(meetings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ✅ Get meetings within a date range
+router.get("/range", async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query; // Pass dates as query parameters
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: "Start date and end date are required" });
+    }
+
+    const meetings = await MeetingDetail.findAll({
+      where: {
+        meetingDate: { [Op.between]: [startDate, endDate] }
+      },
+      attributes: { exclude: ["createdAt", "updatedAt"] }
+    });
+
+    res.json(meetings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ✅ Get meetings by a specific date
+router.get("/date/:date", async (req, res) => {
+  try {
+    const { date } = req.params;
+    const meetings = await MeetingDetail.findAll({
+      where: { meetingDate: date },
+      attributes: { exclude: ["createdAt", "updatedAt"] }
+    });
+    
+    if (meetings.length === 0) return res.status(404).json({ message: "No meetings found on this date" });
+
+    res.json(meetings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ✅ Get meetings by a specific time
+router.get("/time/:time", async (req, res) => {
+  try {
+    const { time } = req.params;
+    const meetings = await MeetingDetail.findAll({
+      where: { meetingTime: time },
+      attributes: { exclude: ["createdAt", "updatedAt"] }
+    });
+
+    if (meetings.length === 0) return res.status(404).json({ message: "No meetings found at this time" });
+
+    res.json(meetings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 export default router;

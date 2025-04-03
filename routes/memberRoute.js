@@ -48,11 +48,19 @@ router.put("/:id", async (req, res) => {
     if (!member) return res.status(404).json({ error: "Member not found" });
 
     await member.update(req.body);
-    res.json(member);
+    
+    // Fetch the updated member details after update
+    const updatedMember = await Member.findByPk(req.params.id, {
+      include: { model: MeetingDetail, as: "meeting", attributes: { exclude: ["createdAt", "updatedAt"] } },
+      attributes: { exclude: ["createdAt", "updatedAt"] }
+    });
+
+    res.json({ message: "Member updated successfully", updatedMember });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
+
 
 // ✅ Delete a member
 router.delete("/:id", async (req, res) => {
