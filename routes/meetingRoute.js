@@ -1,5 +1,7 @@
 import express from "express";
 import db from "../models/index.js";
+import { validateMeetingDetail } from "../middlewares/meetingValidator.js";
+import { validateResult } from "../middlewares/validateResult.js";
 
 const router = express.Router();
 const { MeetingDetail, Member } = db;
@@ -32,7 +34,16 @@ router.get("/:id", async (req, res) => {
 });
 
 // ✅ Create a new meeting
-router.post("/", async (req, res) => {
+
+// router.post("/", async (req, res) => {
+//   try {
+//     const newMeeting = await MeetingDetail.create(req.body);
+//     res.status(201).json(newMeeting);
+//   } catch (error) {
+//     res.status(400).json({ error: error.message });
+//   }
+// });
+router.post("/", validateMeetingDetail, validateResult, async (req, res) => {
   try {
     const newMeeting = await MeetingDetail.create(req.body);
     res.status(201).json(newMeeting);
@@ -42,7 +53,19 @@ router.post("/", async (req, res) => {
 });
 
 // ✅ Update a specific meeting (only provided fields)
-router.put("/:id", async (req, res) => {
+// router.put("/:id", async (req, res) => {
+//   try {
+//     const meeting = await MeetingDetail.findByPk(req.params.id);
+//     if (!meeting) return res.status(404).json({ error: "Meeting not found" });
+
+//     await meeting.update(req.body);
+//     res.json(meeting);
+//   } catch (error) {
+//     res.status(400).json({ error: error.message });
+//   }
+// });
+
+router.put("/:id", validateMeetingDetail, validateResult, async (req, res) => {
   try {
     const meeting = await MeetingDetail.findByPk(req.params.id);
     if (!meeting) return res.status(404).json({ error: "Meeting not found" });

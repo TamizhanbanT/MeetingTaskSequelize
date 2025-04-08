@@ -1,5 +1,7 @@
 import express from "express";
 import db from "../models/index.js";
+import { validateMember } from "../middlewares/memberValidator.js"
+import { validateResult } from "../middlewares/validateResult.js"
 
 const router = express.Router();
 const { Member, MeetingDetail } = db;
@@ -31,15 +33,6 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// ✅ Create a new member
-router.post("/", async (req, res) => {
-  try {
-    const newMember = await Member.create(req.body);
-    res.status(201).json(newMember);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
 
 // ✅ Update a specific member (only provided fields)
 router.put("/:id", async (req, res) => {
@@ -73,4 +66,32 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// ✅ Create a new member with validation
+router.post("/", validateMember, validateResult, async (req, res) => {
+  try {
+    const newMember = await Member.create(req.body);
+    res.status(201).json(newMember);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ✅ Update a specific member with validation
+router.put("/:id", validateMember, validateResult, async (req, res) => {
+  try {
+    const member = await Member.findByPk(req.params.id);
+    if (!member) return res.status(404).json({ error: "Member not found" });
+
+    await member.update(req.body);
+
+    const updatedMember = await Member.findByPk(req.params.id, {
+      include: { model: MeetingDetail, as: "meeting", attributes: { exclude: ["createdAt", "updatedAt"] } },
+      attributes: { exclude: ["createdAt", "updatedAt"] }
+    });
+
+    res.json({ message: "Member updated successfully", updatedMember });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
 export default router;
