@@ -2,6 +2,7 @@ import express from "express";
 import db from "../models/index.js";
 import { validateMeetingDetail } from "../middlewares/meetingValidator.js";
 import { validateResult } from "../middlewares/validateResult.js";
+import { Op } from "sequelize";
 
 const router = express.Router();
 const { MeetingDetail, Member } = db;
@@ -115,6 +116,46 @@ router.get("/past", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ✅ Pagination: Get meetings by role and page
+router.get("/paginate/:role/:page", async (req, res) => {
+  const limit = 10;
+  const { role, page } = req.params;
+  const offset = (parseInt(page) - 1) * limit;
+
+  try {
+    // Total number of matching meetings
+    const totalItems = await MeetingDetail.count({
+      where: { meetingRole: role }
+    });
+
+    const meetings = await MeetingDetail.findAll({
+      where: { meetingRole: role },
+      include: { 
+        model: Member,
+        as: "members",
+        attributes: { exclude: ["createdAt", "updatedAt"] }
+      },
+      attributes: { exclude: ["createdAt", "updatedAt"] },
+      limit,
+      offset
+    });
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    res.json({
+      role,
+      currentPage: parseInt(page),
+      totalPages,
+      totalItems,
+      limitPerPage: limit,
+      data: meetings
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 
 // ✅ Get meetings within a date range
 router.get("/range", async (req, res) => {
