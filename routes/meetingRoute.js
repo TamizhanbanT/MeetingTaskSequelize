@@ -124,14 +124,15 @@ router.get("/paginate/:role/:page", async (req, res) => {
   const offset = (parseInt(page) - 1) * limit;
 
   try {
-    // Total number of matching meetings
+    // Count total meetings matching the role
     const totalItems = await MeetingDetail.count({
       where: { meetingRole: role }
     });
 
+    // Fetch paginated meeting details
     const meetings = await MeetingDetail.findAll({
       where: { meetingRole: role },
-      include: { 
+      include: {
         model: Member,
         as: "members",
         attributes: { exclude: ["createdAt", "updatedAt"] }
@@ -143,7 +144,13 @@ router.get("/paginate/:role/:page", async (req, res) => {
 
     const totalPages = Math.ceil(totalItems / limit);
 
-    res.json({
+    // If no meetings found
+    if (!meetings.length) {
+      return res.status(404).json({ message: "No meetings found for this role" });
+    }
+
+    // Respond with paginated data
+    res.status(200).json({
       role,
       currentPage: parseInt(page),
       totalPages,
@@ -151,10 +158,16 @@ router.get("/paginate/:role/:page", async (req, res) => {
       limitPerPage: limit,
       data: meetings
     });
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Pagination error:", error);
+    res.status(500).json({
+      message: "An error occurred while fetching meetings",
+      error: error.message
+    });
   }
 });
+
 
 
 // ✅ Get meetings within a date range
